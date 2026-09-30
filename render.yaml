@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: cifake-api
+    runtime: python
+    region: singapore
+    plan: free
+    branch: main
+    buildCommand: pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.14
