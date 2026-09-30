@@ -22,12 +22,41 @@ MODEL_PATH = resolve_model_path()
 IMG_SIZE = 96
 _model = None
 
+def _patch_keras_compatibility():
+    import inspect
+    try:
+        import keras.initializers
+        orig_init = keras.initializers.VarianceScaling.__init__
+        sig = inspect.signature(orig_init)
+        if "input_axes" not in sig.parameters:
+            def patched_init(self, *args, **kwargs):
+                kwargs.pop("input_axes", None)
+                kwargs.pop("output_axes", None)
+                return orig_init(self, *args, **kwargs)
+            keras.initializers.VarianceScaling.__init__ = patched_init
+    except Exception:
+        pass
+
+    try:
+        import tensorflow as tf
+        orig_tf_init = tf.keras.initializers.VarianceScaling.__init__
+        sig_tf = inspect.signature(orig_tf_init)
+        if "input_axes" not in sig_tf.parameters:
+            def patched_tf_init(self, *args, **kwargs):
+                kwargs.pop("input_axes", None)
+                kwargs.pop("output_axes", None)
+                return orig_tf_init(self, *args, **kwargs)
+            tf.keras.initializers.VarianceScaling.__init__ = patched_tf_init
+    except Exception:
+        pass
+
 def get_model():
     global _model
     if _model is not None:
         return _model
 
     if os.path.exists(MODEL_PATH):
+        _patch_keras_compatibility()
         try:
             import keras
             _model = keras.models.load_model(MODEL_PATH)
